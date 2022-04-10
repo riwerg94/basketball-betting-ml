@@ -1,8 +1,12 @@
-#%%
 import pandas as pd
 from basketball_reference_scraper.box_scores import get_box_scores
 import basketball_reference_scraper.seasons as seasons
 import numpy as np
+from data import TEAM_ABBREVIATIONS_TO_TEAM
+import data
+from webscrape_threader import parallel_scrape
+
+
 class NBAUtility:
     @staticmethod
     def _label_winner(home_score: int, away_score: int):
@@ -14,6 +18,7 @@ class NBAUtility:
     @staticmethod
     def _name_to_abbreviation(series: pd.Series):
         return series.str.upper().map(TEAM_ABBREVIATIONS_TO_TEAM)
+
 
 #%%
 class NBAFE(NBAUtility):
@@ -30,7 +35,6 @@ class NBAFE(NBAUtility):
             "VISITOR_PTS": "int64"
         }
         return df.astype(dtype=column_dtypes)
-
 
 
 #%%
@@ -56,10 +60,13 @@ class NBATeam(NBA):
         self.utilities = NBA
         self.team_season = self.team_schedule()
 
+
         if add_features:
             (
                 self._convert_name_to_abbreviation()
             )
+            season_box_scores = self.get_season_box_scores()
+            self.season_box_scores = season_box_scores[~season_box_scores.MP.str.contains("[a-zA-Z]")]
 
     def team_schedule(self):
         nba_season = self.nba_season.copy()
@@ -70,11 +77,13 @@ class NBATeam(NBA):
             self.team_season[f"{i}_ABBR"] = self._name_to_abbreviation(self.team_season[i])
 
     def get_season_box_scores(self):
+        df = pd.concat(parallel_scrape(self.team_season[['DATE', 'HOME_ABBR', 'VISITOR_ABBR']].to_records(index=False)))
+        for column in df.columns[~df.columns.isin(['GAME_DATE'])]:
+            df[column] = pd.to_numeric(df[column], errors='ignore')
+        return df
 
-        self.team_season[['DATE', 'HOME_ABBR', 'VISITOR_ABBR']]
 
-
-
-
-
-ex = parallel_scrape(list(df[['DATE', 'HOME_ABBR', 'VISITOR_ABBR']].to_records(index=False)))
+if __name__ == "__main__":
+    lakers = NBATeam('Lakers', season='2009')
+    lakers.season_box_scores
+    print()
