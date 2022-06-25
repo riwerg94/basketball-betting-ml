@@ -13,7 +13,10 @@ class NBAParser:
 def request_box_scores(date, home, visitor):
     pars = NBAParser()
 
-    stats = get_box_scores(date, home, visitor)
+    try:
+        stats = get_box_scores(date, home, visitor)
+    except:
+         return
 
     home_team = stats[home].assign(GAME_DATE=pd.to_datetime(date)).assign(TEAM=home)
     visitor_team = stats[visitor].assign(GAME_DATE=pd.to_datetime(date)).assign(TEAM=visitor)

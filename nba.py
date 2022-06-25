@@ -33,9 +33,9 @@ class NBAData(NBAUtility):
 
     def get_and_download_data(self):
 
-        schedule = self.get_team_schedules(self.season)
+        schedule = self._get_team_schedules(self.season)
         schedule.to_csv(f".data/raw_data/nba_schedules/{self.season}_schedule_matches.csv")
-        box_scores = self.get_box_scores(schedule)
+        box_scores = self._get_box_scores(schedule)
         box_scores.to_csv(f".data/raw_data/box_scores/{self.season}_box_scores.csv")
 
     def _convert_name_to_abbreviation(self, df):
@@ -44,13 +44,13 @@ class NBAData(NBAUtility):
             df.loc[:, f"{i}_ABBR"] = self.nba._name_to_abbreviation(df[i])
         return df
 
-    def get_box_scores(self, schedule):
+    def _get_box_scores(self, schedule):
         schedule = self._convert_name_to_abbreviation(schedule)
         df = pd.concat(parallel_webscrape(schedule[['DATE', 'HOME_ABBR', 'VISITOR_ABBR']].to_records(index=False)))
         self.__log.info(f"Finished getting box scores for {self.season}")
         return df
 
-    def get_team_schedules(self, season):
+    def _get_team_schedules(self, season):
         self.__log.info("Getting team schedules")
         df = seasons.get_schedule(season)
         return df[(~df.VISITOR_PTS.isna()) | (~df.HOME_PTS.isna())]
@@ -89,43 +89,43 @@ class NBA(NBAFE):
         return vect_func(away_score=season['VISITOR_PTS'], home_score=season['HOME_PTS'])
 
 
-class NBATeam(NBA):
-    def __init__(self, team: str, season: str, add_features: bool = True):
-        super().__init__(season)
-        self.team = team
-        self.utilities = NBAUtility()
-        self.team_season = self.team_schedule()
-        self.season_dates = self.team_season['GAME_DATE'].values.tolist()
-
-
-        if add_features:
-            (
-                self._convert_name_to_abbreviation()
-            )
-            season_box_scores = self.get_season_box_scores()
-
-    def team_schedule(self):
-        nba_season = self.nba_season.copy()
-        return nba_season[(nba_season.VISITOR.str.contains(pat=f"({self.team})", regex=True)) | (nba_season.HOME.str.contains(pat=f"({self.team})", regex=True))]
-
-    def _convert_name_to_abbreviation(self):
-        for i in ['HOME', 'VISITOR']:
-            self.team_season.loc[:, f"{i}_ABBR"] = self._name_to_abbreviation(self.team_season[i])
-
-    def get_season_box_scores(self):
-        df = pd.concat(parallel_webscrape(self.team_season[['DATE', 'HOME_ABBR', 'VISITOR_ABBR']].to_records(index=False)))
-
-        df = df[~df.MP.str.contains("[a-zA-Z]")]
-
-        for column in df.columns[~df.columns.isin(['GAME_DATE'])]:
-            df[column] = pd.to_numeric(df[column], errors='ignore')
-
-        return df
+# class NBATeam(NBA):
+#     def __init__(self, team: str, season: str, add_features: bool = True):
+#         super().__init__(season)
+#         self.team = team
+#         self.utilities = NBAUtility()
+#         self.team_season = self.team_schedule()
+#         self.season_dates = self.team_season['GAME_DATE'].values.tolist()
+#
+#
+#         if add_features:
+#             (
+#                 self._convert_name_to_abbreviation()
+#             )
+#             season_box_scores = self.get_season_box_scores()
+#
+#     def team_schedule(self):
+#         nba_season = self.nba_season.copy()
+#         return nba_season[(nba_season.VISITOR.str.contains(pat=f"({self.team})", regex=True)) | (nba_season.HOME.str.contains(pat=f"({self.team})", regex=True))]
+#
+#     def _convert_name_to_abbreviation(self):
+#         for i in ['HOME', 'VISITOR']:
+#             self.team_season.loc[:, f"{i}_ABBR"] = self._name_to_abbreviation(self.team_season[i])
+#
+#     def get_season_box_scores(self):
+#         df = pd.concat(parallel_scrape(self.team_season[['DATE', 'HOME_ABBR', 'VISITOR_ABBR']].to_records(index=False)))
+#
+#         df = df[~df.MP.str.contains("[a-zA-Z]")]
+#
+#         for column in df.columns[~df.columns.isin(['GAME_DATE'])]:
+#             df[column] = pd.to_numeric(df[column], errors='ignore')
+#
+#         return df
 
 @traced
 @logged
 def get_data():
-    years = ['2022']
+    years = ['2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022']
     for year in years:
         NBAData(season=year, to_csv=True).get_and_download_data()
 
