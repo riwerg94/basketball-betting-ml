@@ -1,4 +1,5 @@
 import pandas as pd
+from timeout_decorator import timeout
 from basketball_reference_scraper.box_scores import get_box_scores
 
 class NBAParser:
@@ -8,10 +9,11 @@ class NBAParser:
     # @classmethod
     # def format_box_score(cls, teams: dict):
 
-
-
+# @timeout(2.5)
 def request_box_scores(date, home, visitor):
     pars = NBAParser()
+
+
 
     try:
         stats = get_box_scores(date, home, visitor)

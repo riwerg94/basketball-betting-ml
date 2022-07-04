@@ -2,7 +2,7 @@ import pandas as pd
 from basketball_reference_scraper.box_scores import get_box_scores
 import basketball_reference_scraper.seasons as seasons
 import numpy as np
-from data import TEAM_ABBREVIATIONS_TO_TEAM
+from data import TEAM_TO_TEAM_ABBREVIATION
 import data
 from parallel_webscrape import parallel_webscrape
 from autologging import traced, logged
@@ -21,7 +21,7 @@ class NBAUtility:
 
     @staticmethod
     def _name_to_abbreviation(series: pd.Series):
-        return series.str.upper().map(TEAM_ABBREVIATIONS_TO_TEAM)
+        return series.str.upper().map(TEAM_TO_TEAM_ABBREVIATION)
 
 @traced
 @logged
@@ -125,7 +125,7 @@ class NBATeam(NBA):
 @traced
 @logged
 def get_data():
-    years = ['2022']
+    years = ['2010']
     for year in years:
         NBAData(season=year, to_csv=True).get_and_download_data()
 
