@@ -64,12 +64,12 @@ def build_team_data(df_schedule, df_bs, team, year):
 
     # df_bs_players = df_bs[df_bs.PLAYER != 'Team Totals']
 
-    df_team.loc[:, "HOME_ABBR"] = df_team.HOME.apply(lambda x: TEAM_TO_TEAM_ABBREVIATION[Team(x.upper())])
-    df_team.loc[:, "VISITOR_ABBR"] = df_team.VISITOR.apply(lambda x: TEAM_TO_TEAM_ABBREVIATION[Team(x.upper())])
+    df_team.loc[:, "HOME_ABBR"] = df_team.HOME.apply(lambda x: TEAM_TO_TEAM_ABBREVIATION[Team(x.upper()).value])
+    df_team.loc[:, "VISITOR_ABBR"] = df_team.VISITOR.apply(lambda x: TEAM_TO_TEAM_ABBREVIATION[Team(x.upper()).value])
 
     team_schedule_ls = df_team.DATE.dt.date.values.tolist()
 
-    df_bs_team = df_bs[df_bs.TEAM == TEAM_TO_TEAM_ABBREVIATION[team]].sort_values(['PLAYER', 'GAME_DATE']).set_index('GAME_DATE')
+    df_bs_team = df_bs[df_bs.TEAM == TEAM_TO_TEAM_ABBREVIATION[team.value]].sort_values(['PLAYER', 'GAME_DATE']).set_index('GAME_DATE')
 
     df_bs_players = df_bs_team[df_bs_team.PLAYER != 'Team Totals']
     df_bs_team_totals = df_bs_team[df_bs_team.PLAYER == 'Team Totals']

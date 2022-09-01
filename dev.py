@@ -132,4 +132,6 @@ def get_data():
 
 if __name__ == "__main__":
     logging.basicConfig(level = 20, stream = sys.stderr, format = "%(levelname)s:%(filename)s,%(lineno)d:%(name)s.%(funcName)s:%(message)s")
-    get_data()
+    # get_data()
+    from basketball_reference_scraper.players import get_game_logs
+    get_game_logs("Jamario Moon", start_date="10-28-2009", end_date="4-14-2010")
