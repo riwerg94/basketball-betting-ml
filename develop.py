@@ -26,6 +26,9 @@ class NBAParser:
         with open(path, "w+", encoding="utf-8") as f:
             f.write(data)
 
+    @staticmethod
+    def clean_season_standings(standings):
+        return pd.DataFrame(standings, index=[0])
 
     def parse_player_mvp_voting_html(self):
         with open(f"data/raw_data/mvp_voting_html/{self.year}.html", "r", encoding="utf-8") as f:
@@ -62,6 +65,10 @@ class NBAParser:
 
         self.save_file(html, path="data/raw_data/player_per_game_html/{}.html".format(self.year))
 
+    def get_season_standings(self):
+        standings = client.standings(season_end_year=self.year)
+        return pd.concat(list((map(self.clean_season_standings, standings)))).assign(Year=self.year)
+
     @staticmethod
     def drop_extra_headers(page_, name_, class_, id_):
         soup = BeautifulSoup(page_, "html.parser")
@@ -69,19 +76,6 @@ class NBAParser:
         table = soup.find(id=id_)
         return table
 
-    # @staticmethod
-    # def drop_extra_header_mvp(page):
-    #     soup = BeautifulSoup(page, "html.parser")
-    #     soup.find("tr", class_="over_header").decompose()
-    #     mvp_table = soup.find(id="mvp")
-    #     return mvp_table
-    #
-    # def drop_extra_header_per_game(self, page):
-    #     soup = BeautifulSoup(page, "html.parser")
-    #     soup.find("tr", class_="thead").decompose()
-    #     per_game_table = soup.find(id="per_game_stats")
-    #
-    #     player_table = pd.read_html(str(per_game_table))
 
 class NBAPlayers:
     def __init__(self, year: int):
@@ -105,4 +99,4 @@ class NBAPlayers:
         return client.search(player_name)
 
 if __name__ == "__main__":
-    client.regular_season_player_box_scores()
+    NBAParser(year=2009).get_season_standings()

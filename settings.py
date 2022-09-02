@@ -24,7 +24,7 @@ def set_basic_logging(format_str: str = DEFAULT_LOG_FORMAT, log_warnings: bool =
     logging.basicConfig(
         level=level if level else int(os.getenv("LOGGING_LEVEL", logging.WARNING)),
         stream=sys.stdout,
-        format=format_str,
+        # format=format_str,
         datefmt="%Y-%m-%d %H-%M-%S",
     )
 
