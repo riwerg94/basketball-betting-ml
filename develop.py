@@ -1,12 +1,14 @@
 import time
 
 from basketball_reference_web_scraper import client
+from basketball_reference_web_scraper.data import OutputType
 from typing import AnyStr
 import pandas as pd
 import requests
 from selenium import webdriver
 from bs4 import BeautifulSoup
 from autologging import traced, logged
+
 
 @traced
 @logged
@@ -51,7 +53,7 @@ class NBAParser:
         return per_game
 
     def parse_player_per_game_data(self):
-        url = 'https://www.basketball-reference.com/leagues/NBA_{}_per_game.html'.format(self.year)
+        url = f'https://www.basketball-reference.com/leagues/NBA_{self.year}_per_game.html'
         driver = webdriver.Firefox(
             executable_path="C:/Users/rivverg/DontBeABitch/Projects/My Shit/basketball-betting-ml/src/dependencies/geckodriver.exe")
 
@@ -66,8 +68,26 @@ class NBAParser:
         self.save_file(html, path="data/raw_data/player_per_game_html/{}.html".format(self.year))
 
     def get_season_standings(self):
-        standings = client.standings(season_end_year=self.year)
-        return pd.concat(list((map(self.clean_season_standings, standings)))).assign(Year=self.year)
+        url = 'https://www.basketball-reference.com/leagues/NBA_{}_standings.html'.format(self.year)
+
+        data = requests.get(url)
+
+        nba_standings = []
+
+        eastern_standings = self.drop_extra_headers(page_=data.text, name_="tr", class_="thead", id_="divs_standings_E")
+        eastern_table = pd.read_html(str(eastern_standings))[0].assign(Year=self.year).assign(Team=lambda x: x['Eastern Conference']).drop(columns="Eastern Conference")
+        eastern_table = eastern_table[eastern_table]
+
+        western_standings = self.drop_extra_headers(page_=data.text, name_="tr", class_="thead", id_="divs_standings_W")
+        western_table = pd.read_html(str(western_standings))[0].assign(Year=self.year).assign(Team=lambda x: x['Western Conference']).drop(columns="Western Conference")
+
+        df = pd.concat([eastern_table, western_table])
+
+        df.to_csv(f"data/raw_data/season_standings/{self.year}.csv")
+
+
+        # standings = client.standings(season_end_year=self.year)
+        # return pd.concat(list((map(self.clean_season_standings, standings)))).assign(Year=self.year)
 
     @staticmethod
     def drop_extra_headers(page_, name_, class_, id_):
@@ -77,22 +97,30 @@ class NBAParser:
         return table
 
 
+
 class NBAPlayers:
     def __init__(self, year: int):
-        self.advanced_stats = self.get_players_advanced_stats(year)
-        self.player_identifiers = self.advanced_stats['slug']
+        self.year = year
 
-    def get_players_advanced_stats(self, year, output_file_path=None):
+    def get_players_advanced_stats(self, output_file_path=None):
         if output_file_path is not None:
-            client.players_advanced_season_totals(year, output_file_path)
+            client.players_advanced_season_totals(
+                season_end_year=self.year,
+                output_file_path=output_file_path,
+                output_type=OutputType.JSON
+            )
         else:
-            return pd.DataFrame(client.players_advanced_season_totals(year))
+            return pd.DataFrame(client.players_advanced_season_totals(self.year))
 
-    def get_players_basic_stats(self, year, output_file_path=None):
+    def get_players_basic_stats(self, output_file_path=None):
         if output_file_path is not None:
-            client.players_season_totals(year, output_file_path)
+            client.players_season_totals(
+                season_end_year=self.year,
+                output_file_path=output_file_path,
+                output_type=OutputType.JSON
+            )
         else:
-            return pd.DataFrame(client.players_season_totals(year))
+            return pd.DataFrame(client.players_season_totals(self.year))
 
     @staticmethod
     def player_search(player_name: AnyStr):
@@ -100,3 +128,4 @@ class NBAPlayers:
 
 if __name__ == "__main__":
     NBAParser(year=2009).get_season_standings()
+    # NBAPlayers(year=2009).()
